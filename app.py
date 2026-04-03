@@ -309,7 +309,6 @@ with gr.Blocks(theme=None, css=MINIMAL_CSS) as demo:
     
     gr.HTML("""
     <div class="minimal-footer">
-        <span>⚡ Digital twin — answers based on CV & experience</span><br>
         <span style="font-size: 11px;">📧 solarinayosam@gmail.com | 🔗 <a href="https://linkedin.com/in/solarinayo" target="_blank">LinkedIn</a> | 🌐 <a href="https://solarinayo.vercel.app" target="_blank">Portfolio</a></span>
     </div>
     """)
