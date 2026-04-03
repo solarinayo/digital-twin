@@ -1,7 +1,6 @@
 import os
 import gradio as gr
 from openai import OpenAI
-import time
 
 # Initialize OpenAI client
 api_key = os.environ.get("OPENAI_API_KEY")
@@ -35,10 +34,10 @@ SYSTEM_PROMPT = """You are Solarin Ayomide's digital twin – a tech builder and
 Answer naturally as Solarin Ayomide. Use "I" statements."""
 
 CONTACT_INFO = """
-📧 Email: solarinayosam@gmail.com
-📱 Phone: +234 807 777 5678
-🔗 LinkedIn: linkedin.com/in/solarinayo
-🌐 Portfolio: solarinayo.vercel.app
+Email: solarinayosam@gmail.com
+Phone: +234 807 777 5678
+LinkedIn: linkedin.com/in/solarinayo
+Portfolio: solarinayo.vercel.app
 """
 
 # Fallback responses for common questions when API fails
@@ -79,7 +78,7 @@ def chat(message, history):
     # Check for contact info
     contact_keywords = ["reach", "contact", "email", "phone", "call", "whatsapp", "get in touch"]
     if any(keyword in message.lower() for keyword in contact_keywords):
-        return f"Thanks for asking! Here's how you can reach me:\n\n{CONTACT_INFO}\n\nLooking forward to connecting! 🚀"
+        return f"Thanks for asking. Here is how you can reach me:\n\n{CONTACT_INFO}\n\nLooking forward to connecting."
     
     # Check for collaboration
     if "collaborate" in message.lower() or "project" in message.lower():
@@ -90,7 +89,7 @@ The best way to start is to send me:
 2. Your timeline and budget range
 3. Any existing designs or requirements
 
-Email me at solarinayosam@gmail.com. Let's build something impactful! 🚀"""
+Email me at solarinayosam@gmail.com. Let's build something impactful."""
     
     # Try fallback first for common questions
     fallback = get_fallback_response(message)
@@ -127,41 +126,227 @@ Email me at solarinayosam@gmail.com. Let's build something impactful! 🚀"""
     # Ultimate fallback
     return "I'm Solarin Ayomide – a web developer and digital strategist. You can ask me about my work experience, technical skills, collaboration opportunities, or contact me directly at solarinayosam@gmail.com. What specific information would you like?"
 
-# Create Gradio interface with image
-with gr.Blocks() as demo:
-    gr.HTML(f"""
-    <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 10px; margin-bottom: 20px;">
-        <div style="display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap;">
-            <img src="https://res.cloudinary.com/dc2wrlebl/image/upload/v1775226566/Ayomide_xakvsf.jpg" 
-                 alt="Solarin Ayomide" 
-                 style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid white;">
-            <div>
-                <h1 style="margin: 0;">🤖 Solarin Ayomide — Digital Twin</h1>
-                <p style="margin: 10px 0 0;">Chat with a digital twin of Solarin Ayomide — tech builder, full-stack developer, and digital strategist</p>
-            </div>
-        </div>
+TWIN_CSS = """
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600;700&display=swap');
+
+.gradio-container {
+  font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif !important;
+  max-width: 920px !important;
+}
+.gradio-container .contain {
+  padding-top: 0 !important;
+}
+
+/* Monochrome surfaces */
+.gradio-container,
+footer.gradio-footer { background: #e8e8e8 !important; }
+
+/* Chat panel */
+.gradio-chatbot { border: 1px solid #1a1a1a !important; background: #fafafa !important; }
+.gradio-chatbot .message.user,
+.gradio-chatbot .user { background: #1a1a1a !important; color: #f5f5f5 !important; border: none !important; }
+.gradio-chatbot .message.bot,
+.gradio-chatbot .bot { background: #ffffff !important; color: #1a1a1a !important; border: 1px solid #d0d0d0 !important; }
+
+/* Inputs & primary actions */
+.gradio-container button.primary,
+.gradio-container .lg.primary {
+  background: #1a1a1a !important;
+  color: #fafafa !important;
+  border: 1px solid #1a1a1a !important;
+}
+.gradio-container button.primary:hover,
+.gradio-container .lg.primary:hover {
+  background: #000 !important;
+  border-color: #000 !important;
+}
+.gradio-container textarea, .gradio-container input[type="text"] {
+  border: 1px solid #1a1a1a !important;
+  background: #fff !important;
+  color: #1a1a1a !important;
+}
+.gradio-container .block { border-color: #c8c8c8 !important; }
+
+/* Example chips */
+.gradio-container .examples button {
+  border: 1px solid #1a1a1a !important;
+  background: #fff !important;
+  color: #1a1a1a !important;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace !important;
+  font-size: 0.75rem !important;
+  letter-spacing: 0.02em;
+}
+.gradio-container .examples button:hover {
+  background: #1a1a1a !important;
+  color: #fafafa !important;
+}
+"""
+
+HEADER_HTML = """
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<style>
+.dt-shell {
+  font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+  background: #0a0a0a;
+  color: #f0f0f0;
+  border: 1px solid #1a1a1a;
+  margin: 0 0 1.25rem 0;
+  position: relative;
+  overflow: hidden;
+}
+.dt-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+  pointer-events: none;
+}
+.dt-inner {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1.5rem;
+  align-items: stretch;
+  padding: 1.35rem 1.5rem;
+}
+@media (max-width: 640px) {
+  .dt-inner { grid-template-columns: 1fr; text-align: center; justify-items: center; }
+}
+.dt-rail {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #737373;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  border-left: 1px solid #262626;
+  padding-left: 0.65rem;
+  align-self: center;
+  order: 2;
+}
+@media (max-width: 640px) {
+  .dt-rail { writing-mode: horizontal-tb; transform: none; border-left: none; border-top: 1px solid #262626; padding: 0.5rem 0 0; width: 100%; text-align: center; order: 3; }
+}
+.dt-main { order: 1; display: flex; gap: 1.25rem; align-items: center; flex-wrap: wrap; }
+.dt-photo-wrap {
+  flex-shrink: 0;
+  border: 1px solid #404040;
+  padding: 3px;
+  background: #141414;
+}
+.dt-photo {
+  width: 88px;
+  height: 88px;
+  object-fit: cover;
+  display: block;
+  filter: grayscale(100%);
+}
+.dt-copy { min-width: 0; flex: 1; }
+.dt-kicker {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #a3a3a3;
+  margin: 0 0 0.4rem 0;
+}
+.dt-title {
+  font-size: clamp(1.35rem, 3.5vw, 1.75rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  margin: 0 0 0.35rem 0;
+  line-height: 1.15;
+  color: #fafafa;
+}
+.dt-sub {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: #a3a3a3;
+  max-width: 36rem;
+}
+.dt-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.65rem;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #737373;
+}
+.dt-dot {
+  width: 6px;
+  height: 6px;
+  background: #fafafa;
+  animation: dt-pulse 2s ease-in-out infinite;
+}
+@keyframes dt-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+</style>
+<div class="dt-shell">
+  <div class="dt-inner">
+    <div class="dt-rail">Digital twin · live interface</div>
+    <div class="dt-main">
+      <div class="dt-photo-wrap">
+        <img class="dt-photo" src="https://res.cloudinary.com/dc2wrlebl/image/upload/v1775226566/Ayomide_xakvsf.jpg" alt="Solarin Ayomide">
+      </div>
+      <div class="dt-copy">
+        <p class="dt-kicker">Solarin Ayomide</p>
+        <h1 class="dt-title">Twin session</h1>
+        <p class="dt-sub">Ask about work, stack, projects, or collaboration. Responses mirror CV-backed context and tone.</p>
+        <div class="dt-status"><span class="dt-dot" aria-hidden="true"></span> Session active</div>
+      </div>
     </div>
-    """)
+  </div>
+</div>
+"""
+
+try:
+    _Mono = getattr(gr.themes, "Monochrome", None)
+    if _Mono is not None:
+        _theme = _Mono(
+            primary_hue="gray",
+            secondary_hue="gray",
+            font=["Instrument Sans", "ui-sans-serif", "system-ui", "sans-serif"],
+            font_mono=["IBM Plex Mono", "ui-monospace", "monospace"],
+        ).set(
+            body_background_fill="#e8e8e8",
+            block_background_fill="#ffffff",
+            block_border_color="#c8c8c8",
+            block_label_text_color="#1a1a1a",
+            body_text_color="#1a1a1a",
+            button_primary_background_fill="#1a1a1a",
+            button_primary_text_color="#fafafa",
+        )
+    else:
+        _theme = None
+except Exception:
+    _theme = None
+
+with gr.Blocks(theme=_theme, css=TWIN_CSS) as demo:
+    gr.HTML(HEADER_HTML)
 
     gr.ChatInterface(
         fn=chat,
-        description="Hi — I'm Solarin Ayomide. Ask me about my work, background, or how we might collaborate.",
+        description="Input below. Plain language; technical detail on request.",
         examples=[
             "What do you focus on as a full-stack developer?",
             "How could we collaborate on a project?",
             "What's your experience with payment integrations?",
             "Tell me about your work at Pinnaview Networks",
             "What are you interested in building right now?",
-            "What technologies do you use?"
-        ]
+            "What technologies do you use?",
+        ],
     )
-
-    gr.HTML("""
-    <footer style="text-align: center; margin-top: 20px; padding: 10px; color: #666; font-size: 0.8em;">
-        ⚡ Solarin Ayomide's digital twin — answers based on his CV and professional experience<br>
-        📧 solarinayosam@gmail.com | 🔗 <a href="https://linkedin.com/in/solarinayo" target="_blank">LinkedIn</a> | 🌐 <a href="https://solarinayo.vercel.app" target="_blank">Portfolio</a>
-    </footer>
-    """)
 
 if __name__ == "__main__":
     demo.launch()
