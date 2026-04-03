@@ -139,89 +139,217 @@ Email me at solarinayosam@gmail.com. Let's build something impactful."""
 
 
 TWIN_CSS = """
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
 .gradio-container {
-  font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif !important;
+  font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif !important;
   max-width: none !important;
   width: 100% !important;
 }
 .gradio-container .contain { max-width: none !important; }
 
-.gradio-chatbot { border: 1px solid #1a1a1a !important; background: #fafafa !important; }
+/* Chat area */
+.gradio-chatbot {
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  background: #f8fafc !important;
+}
 .gradio-chatbot .message.user, .gradio-chatbot .user {
-  background: #1a1a1a !important; color: #f5f5f5 !important; border: none !important;
+  background: linear-gradient(135deg, #5a67d8 0%, #6b46a1 100%) !important;
+  color: #fff !important;
+  border: none !important;
 }
 .gradio-chatbot .message.bot, .gradio-chatbot .bot {
-  background: #fff !important; color: #1a1a1a !important; border: 1px solid #d0d0d0 !important;
+  background: #fff !important;
+  color: #1e293b !important;
+  border: 1px solid #e2e8f0 !important;
 }
 
-.gradio-container button.primary, .gradio-container .lg.primary {
-  background: #1a1a1a !important; color: #fafafa !important; border: 1px solid #1a1a1a !important;
-}
-.gradio-container textarea, .gradio-container input[type="text"] {
-  border: 1px solid #1a1a1a !important; background: #fff !important; color: #1a1a1a !important;
-}
+/* Example chips */
 .gradio-container .examples button {
-  border: 1px solid #1a1a1a !important; background: #fff !important; color: #1a1a1a !important;
-  font-family: 'IBM Plex Mono', ui-monospace, monospace !important;
-  font-size: 0.8rem !important;
+  border: 1px solid #c7d2fe !important;
+  background: #fff !important;
+  color: #4338ca !important;
+  border-radius: 999px !important;
+  font-size: 0.8125rem !important;
 }
 .gradio-container .examples button:hover {
-  background: #1a1a1a !important; color: #fafafa !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: #fff !important;
+  border-color: transparent !important;
+}
+
+/* Composer: textarea + Send (elem_id twin-composer) */
+#twin-composer {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+#twin-composer .wrap,
+#twin-composer .container {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+#twin-composer .wrap {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: stretch !important;
+  gap: 0 !important;
+}
+#twin-composer .wrap > *:first-child {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+#twin-composer [data-testid="textbox"] {
+  border-radius: 14px 0 0 14px !important;
+  border: 2px solid #e2e8f0 !important;
+  border-right: none !important;
+  background: #fff !important;
+  box-shadow: 0 2px 12px rgba(102, 126, 234, 0.08) !important;
+  overflow: hidden !important;
+}
+#twin-composer textarea {
+  padding: 14px 16px !important;
+  font-size: 1rem !important;
+  line-height: 1.5 !important;
+  border: none !important;
+  background: transparent !important;
+  color: #1e293b !important;
+  resize: vertical !important;
+  min-height: 52px !important;
+}
+#twin-composer textarea:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+#twin-composer [data-testid="textbox"]:focus-within {
+  border-color: #a5b4fc !important;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2), 0 2px 12px rgba(102, 126, 234, 0.1) !important;
+}
+#twin-composer button,
+#twin-composer .submit-btn,
+#twin-composer button.primary {
+  border-radius: 0 14px 14px 0 !important;
+  border: 2px solid transparent !important;
+  border-left: none !important;
+  min-height: 52px !important;
+  min-width: 108px !important;
+  padding: 0 1.35rem !important;
+  font-weight: 600 !important;
+  font-size: 0.9375rem !important;
+  letter-spacing: 0.03em !important;
+  text-transform: none !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 2px 12px rgba(118, 75, 162, 0.35) !important;
+  align-self: stretch !important;
+}
+#twin-composer button:hover,
+#twin-composer .submit-btn:hover {
+  filter: brightness(1.06) !important;
+  box-shadow: 0 4px 18px rgba(118, 75, 162, 0.45) !important;
 }
 """
 
 HEADER_HTML = """
 <style>
-.dt-bar {
-  font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
-  display: flex; align-items: center; gap: 1rem;
-  padding: 0.75rem 0 1rem 0;
-  margin-bottom: 0.5rem;
-  border-bottom: 1px solid #ccc;
+.hero-wide {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 1.25rem 0;
+  padding: clamp(1.5rem, 3vw, 2.25rem) clamp(1.25rem, 4vw, 2.5rem);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(102, 126, 234, 0.35);
 }
-.dt-bar img {
-  width: 48px; height: 48px; object-fit: cover;
-  filter: grayscale(100%); border: 1px solid #1a1a1a;
+.hero-wide-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(1.25rem, 4vw, 2.75rem);
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
 }
-.dt-bar h1 {
-  margin: 0; font-size: 1.05rem; font-weight: 600; letter-spacing: -0.02em; color: #0a0a0a;
+.hero-photo-ring {
+  flex-shrink: 0;
+  padding: 5px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, rgba(255,255,255,0.5), rgba(255,255,255,0.15));
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
 }
-.dt-bar p { margin: 0.15rem 0 0 0; font-size: 0.8rem; color: #555; }
+.hero-photo {
+  display: block;
+  width: clamp(132px, 22vw, 200px);
+  height: clamp(132px, 22vw, 200px);
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center 20%;
+  border: 4px solid rgba(255,255,255,0.95);
+}
+.hero-copy {
+  flex: 1 1 280px;
+  text-align: center;
+  color: #fff;
+  min-width: min(100%, 260px);
+}
+.hero-copy h1 {
+  margin: 0;
+  font-size: clamp(1.35rem, 3.2vw, 1.85rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+}
+.hero-copy p {
+  margin: 0.65rem 0 0 0;
+  font-size: clamp(0.9rem, 1.8vw, 1.05rem);
+  line-height: 1.5;
+  opacity: 0.95;
+  max-width: 42rem;
+  margin-left: auto;
+  margin-right: auto;
+}
 </style>
-<div class="dt-bar">
-  <img src="https://res.cloudinary.com/dc2wrlebl/image/upload/v1775226566/Ayomide_xakvsf.jpg" alt="Solarin Ayomide">
-  <div>
-    <h1>Digital twin</h1>
-    <p>Solarin Ayomide — ask anything.</p>
+<div class="hero-wide">
+  <div class="hero-wide-inner">
+    <div class="hero-photo-ring">
+      <img class="hero-photo" src="https://res.cloudinary.com/dc2wrlebl/image/upload/v1775226566/Ayomide_xakvsf.jpg" alt="Solarin Ayomide">
+    </div>
+    <div class="hero-copy">
+      <h1>🤖 Solarin Ayomide — Digital Twin</h1>
+      <p>Chat with a digital twin of Solarin Ayomide — tech builder, full-stack developer, and digital strategist.</p>
+    </div>
   </div>
 </div>
 """
 
-try:
-    _Mono = getattr(gr.themes, "Monochrome", None)
-    _theme = (
-        _Mono(primary_hue="gray", secondary_hue="gray").set(
-            body_background_fill="#ececec",
-            block_background_fill="#ffffff",
-            block_border_color="#c8c8c8",
-            body_text_color="#1a1a1a",
-            button_primary_background_fill="#1a1a1a",
-            button_primary_text_color="#fafafa",
-        )
-        if _Mono
-        else None
-    )
-except Exception:
-    _theme = None
+_composer = gr.Textbox(
+    show_label=False,
+    placeholder="Ask about my work, stack, or collaboration…",
+    lines=2,
+    max_lines=16,
+    scale=7,
+    submit_btn="Send",
+    elem_id="twin-composer",
+    min_width=200,
+    render=False,
+)
 
-with gr.Blocks(theme=_theme, css=TWIN_CSS) as demo:
+with gr.Blocks(theme=None, css=TWIN_CSS) as demo:
     gr.HTML(HEADER_HTML)
     gr.ChatInterface(
         fn=chat,
-        description=None,
-        examples=["What do you work on?", "How do we collaborate?"],
+        textbox=_composer,
+        description="Hi — I'm Solarin Ayomide. Ask me about my work, background, or how we might collaborate.",
+        examples=[
+            "What do you focus on as a full-stack developer?",
+            "How could we collaborate on a project?",
+            "What's your experience with payment integrations?",
+            "What technologies do you use?",
+        ],
         fill_width=True,
         fill_height=True,
         flagging_mode="never",
