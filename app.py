@@ -61,21 +61,26 @@ The best way to start is to send me:
 You can reach me at solarinayosam@gmail.com or +234 807 777 5678. Let's build something impactful! 🚀"""
     
     try:
+        # Build conversation history for OpenAI (multi-turn memory)
+        messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+        for user_msg, bot_msg in history:  # history is list of (user, bot) tuples
+            messages.append({"role": "user", "content": user_msg})
+            messages.append({"role": "assistant", "content": bot_msg})
+        messages.append({"role": "user", "content": message})
+
         # Call OpenAI API
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": message}
-            ],
+            messages=messages,
             temperature=0.7,
             max_tokens=500
         )
         return response.choices[0].message.content
     except Exception as e:
-        return f"Having a technical hiccup. Please try again or reach out directly at solarinayosam@gmail.com."
+        return "Having a technical hiccup. Please try again or reach out directly at solarinayosam@gmail.com."
 
-# Create Gradio interface - Gradio 6 compatible
+
+# Create Gradio interface
 with gr.Blocks() as demo:
     gr.HTML("""
     <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 10px; margin-bottom: 20px;">
@@ -83,10 +88,9 @@ with gr.Blocks() as demo:
         <p style="margin: 10px 0 0;">Chat with a digital twin of Solarin Ayomide — tech builder, full-stack developer, and digital strategist with expertise in web development, payment integrations, and agentic AI systems.</p>
     </div>
     """)
-    
+
     gr.ChatInterface(
         fn=chat,
-        type="messages",
         description="Hi — I'm Solarin Ayomide. Ask me about my work, background, or how we might collaborate. If your question needs detail I don't have here, I may suggest a call or ask you to share a short brief.",
         examples=[
             "What do you focus on as a full-stack developer?",
@@ -96,7 +100,7 @@ with gr.Blocks() as demo:
             "What are you interested in building right now?"
         ]
     )
-    
+
     gr.HTML("""
     <footer style="text-align: center; margin-top: 20px; padding: 10px; color: #666; font-size: 0.8em;">
         ⚡ Solarin Ayomide's digital twin — answers based on his CV and professional experience<br>
