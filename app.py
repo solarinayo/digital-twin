@@ -1,9 +1,14 @@
 import os
 import gradio as gr
 from openai import OpenAI
+import traceback
 
 # Initialize OpenAI client
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+api_key = os.environ.get("OPENAI_API_KEY")
+if not api_key:
+    print("WARNING: OPENAI_API_KEY not set in environment variables!")
+
+client = OpenAI(api_key=api_key) if api_key else None
 
 # Solarin Ayomide's profile (based on CV)
 SYSTEM_PROMPT = """You are Solarin Ayomide's digital twin – a tech builder and digital strategist focused on creating scalable solutions at the intersection of software, education, and growth marketing.
@@ -44,6 +49,10 @@ def chat(message, history):
     if not message:
         return ""
     
+    # Check if API key is missing
+    if not client:
+        return "⚠️ OpenAI API key not configured. Please add OPENAI_API_KEY in Settings → Repository Secrets. Contact me directly at solarinayosam@gmail.com"
+    
     # Check if asking for contact info
     contact_keywords = ["reach", "contact", "email", "phone", "call", "whatsapp", "get in touch"]
     if any(keyword in message.lower() for keyword in contact_keywords):
@@ -63,9 +72,14 @@ You can reach me at solarinayosam@gmail.com or +234 807 777 5678. Let's build so
     try:
         # Build conversation history for OpenAI (multi-turn memory)
         messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-        for user_msg, bot_msg in history:  # history is list of (user, bot) tuples
-            messages.append({"role": "user", "content": user_msg})
-            messages.append({"role": "assistant", "content": bot_msg})
+        
+        # history is a list of [user, assistant] pairs
+        if history:
+            for pair in history:
+                if len(pair) >= 2:
+                    messages.append({"role": "user", "content": pair[0]})
+                    messages.append({"role": "assistant", "content": pair[1]})
+        
         messages.append({"role": "user", "content": message})
 
         # Call OpenAI API
@@ -77,7 +91,14 @@ You can reach me at solarinayosam@gmail.com or +234 807 777 5678. Let's build so
         )
         return response.choices[0].message.content
     except Exception as e:
-        return "Having a technical hiccup. Please try again or reach out directly at solarinayosam@gmail.com."
+        error_msg = str(e)
+        print(f"Error: {error_msg}")
+        print(traceback.format_exc())
+        
+        if "api_key" in error_msg.lower() or "authentication" in error_msg.lower():
+            return "⚠️ OpenAI API key is invalid or missing. Please check your OPENAI_API_KEY secret in Settings → Repository Secrets."
+        else:
+            return f"Having a technical hiccup. Please try again or reach out directly at solarinayosam@gmail.com."
 
 
 # Create Gradio interface
