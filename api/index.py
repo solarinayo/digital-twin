@@ -30,8 +30,9 @@ SYSTEM_PROMPT = """You are Solarin Ayomide's digital twin – a tech builder and
 - Keep responses concise (2-3 sentences max for simple questions)
 - Answer naturally as Solarin Ayomide. Use "I" statements."""
 
-# Swap these for your own hosted URLs if you prefer not to use files in public/images/
-PROFILE_IMG = "/images/profile.jpg"
+PROFILE_IMG = (
+    "https://res.cloudinary.com/dc2wrlebl/image/upload/v1775226566/Ayomide_xakvsf.jpg"
+)
 AVATAR_FALLBACK = "/images/avatar.svg"
 
 
