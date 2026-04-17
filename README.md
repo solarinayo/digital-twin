@@ -1,14 +1,23 @@
----
-title: Digital Twin
-emoji: 🚀
-colorFrom: gray
-colorTo: gray
-sdk: gradio
-sdk_version: 6.11.0
-app_file: app.py
-pinned: false
-fullWidth: true
-header: mini
+# Solarin Ayomide - Digital Twin
+
+AI-powered digital twin representing my skills as a web developer and digital strategist.
+
+## Tech Stack
+
+- Gradio (UI)
+- OpenAI GPT-3.5 Turbo
+- Python
+
+## Features
+
+- Answers questions about my work experience
+- Explains my technical skills
+- Discusses collaboration opportunities
+
+## Live Demo
+
+Deployed on AWS App Runner
+
 ---
 
-Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
+**Built for Andela AI Engineering Bootcamp**
