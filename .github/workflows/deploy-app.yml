@@ -42,6 +42,8 @@ jobs:
         env:
           PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
         run: |
+          # GitHub secrets often include a trailing newline — strip so the image tag is valid.
+          PROJECT_ID="$(printf '%s' "$PROJECT_ID" | tr -d '\n\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
           IMAGE="${{ env.REGION }}-docker.pkg.dev/${PROJECT_ID}/${{ env.REPO }}/${{ env.SERVICE }}:${GITHUB_SHA}"
           docker build -t "${IMAGE}" .
           docker push "${IMAGE}"
@@ -50,12 +52,15 @@ jobs:
       - name: Deploy to Cloud Run
         env:
           PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
+          PROJECT_ID="$(printf '%s' "$PROJECT_ID" | tr -d '\n\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+          OPENAI_API_KEY="$(printf '%s' "$OPENAI_API_KEY" | tr -d '\n\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
           gcloud run deploy ${{ env.SERVICE }} \
             --project "${PROJECT_ID}" \
             --region "${{ env.REGION }}" \
             --image "${IMAGE}" \
             --platform managed \
             --allow-unauthenticated \
-            --set-env-vars "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" \
+            --set-env-vars "OPENAI_API_KEY=${OPENAI_API_KEY}" \
             --quiet

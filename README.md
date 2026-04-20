@@ -67,6 +67,8 @@ Add these in **GitHub → Settings → Secrets and variables → Actions**:
 | `GCP_PROJECT_ID` | Plain project ID string (e.g. `jekacode-488803`). |
 | `OPENAI_API_KEY` | Your OpenAI API key (passed into Cloud Run as an env var by CI). |
 
+When pasting **`GCP_PROJECT_ID`** (or the OpenAI key), avoid an extra blank line after the value—GitHub stores it verbatim, and a trailing newline used to break Docker image tags. Workflows now strip newlines, but keeping secrets single-line is still best practice.
+
 For production, prefer **Secret Manager** + `--set-secrets` instead of storing the OpenAI key only in GitHub; the workflow uses GitHub Secrets for simplicity.
 
 ### Service account roles (bootstrap)

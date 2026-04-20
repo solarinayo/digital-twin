@@ -20,11 +20,14 @@ jobs:
     defaults:
       run:
         working-directory: terraform
-    env:
-      TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Normalize GCP project id for Terraform
+        run: |
+          PID="$(printf '%s' '${{ secrets.GCP_PROJECT_ID }}' | tr -d '\n\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+          echo "TF_VAR_project_id=${PID}" >> "$GITHUB_ENV"
 
       - uses: hashicorp/setup-terraform@v3
         with:
@@ -49,6 +52,7 @@ jobs:
         env:
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
         run: |
+          GCP_PROJECT_ID="$(printf '%s' "$GCP_PROJECT_ID" | tr -d '\n\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
           terraform import -input=false \
             google_artifact_registry_repository.digital_twin \
             "projects/${GCP_PROJECT_ID}/locations/us-central1/repositories/digital-twin" || true
