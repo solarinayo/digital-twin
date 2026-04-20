@@ -41,27 +41,16 @@ data "google_project" "project" {
   depends_on = [google_project_service.apis["cloudresourcemanager.googleapis.com"]]
 }
 
-# OpenAI key: value is never stored in Terraform. Add versions with CI or `gcloud secrets versions add`.
-resource "google_secret_manager_secret" "openai_api_key" {
-  project   = var.project_id
-  secret_id = "openai-api-key"
-
-  replication {
-    auto {}
-  }
-
-  depends_on = [google_project_service.apis]
-}
-
-# Cloud Run (default runtime SA) reads the secret at instance startup as env OPENAI_API_KEY.
+# Secret `openai-api-key` is created outside Terraform (GitHub bootstrap or `gcloud`) so we
+# never hit 409 when it already exists. Terraform only binds IAM for Cloud Run's runtime SA.
 resource "google_secret_manager_secret_iam_member" "openai_runtime_accessor" {
   project   = var.project_id
-  secret_id = google_secret_manager_secret.openai_api_key.id
+  secret_id = "openai-api-key"
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
 
   depends_on = [
     google_project_service.apis["cloudresourcemanager.googleapis.com"],
-    google_secret_manager_secret.openai_api_key,
+    google_project_service.apis["secretmanager.googleapis.com"],
   ]
 }

@@ -9,6 +9,6 @@ output "docker_image_prefix" {
 }
 
 output "openai_secret_id" {
-  description = "Secret Manager id for OpenAI key (mount as OPENAI_API_KEY in Cloud Run)"
-  value       = google_secret_manager_secret.openai_api_key.secret_id
+  description = "Secret Manager id for OpenAI key (created by CI bootstrap or gcloud; mount in Cloud Run)"
+  value       = "openai-api-key"
 }

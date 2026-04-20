@@ -53,9 +53,29 @@ This repo satisfies **CI-based deployment (GitHub Actions)** and **infrastructur
 
 | Piece | Purpose |
 |--------|---------|
-| `terraform/` | Declares **enabled APIs** and a **Docker Artifact Registry** repository used by CI. |
+| `terraform/` | Declares **enabled APIs**, **Artifact Registry**, and **IAM** so Cloud Run’s runtime SA can read Secret Manager secret **`openai-api-key`**. The secret **shell** is created by the infra workflow (or manually), not as a Terraform-managed resource (avoids “already exists” / import pain). |
 | `.github/workflows/deploy-app.yml` | On **push to `main`** (app paths): **Docker build → Artifact Registry → Cloud Run**. |
-| `.github/workflows/infra-apply.yml` | **Pull requests** touching `terraform/`: `fmt`, `validate`, `plan`. **`workflow_dispatch`:** `terraform apply` (run this once—or when infra changes—before the first deploy). |
+| `.github/workflows/infra-apply.yml` | **Pull requests** touching `terraform/`: `fmt`, `validate`, `plan`. **`workflow_dispatch`:** bootstrap Secret Manager if needed, then **`terraform apply`**. |
+
+### Step-by-step: make GCP + Terraform + deploy work
+
+Follow this order once per project (or after you change GCP org/project).
+
+1. **Billing** — In [Google Cloud Console](https://console.cloud.google.com/) → **Billing**, link a billing account to your project (some APIs need it).
+
+2. **GitHub secrets** — Repo → **Settings → Secrets and variables → Actions**. Add **`GCP_PROJECT_ID`**, **`GCP_SA_KEY`** (JSON for a service account that can enable APIs and run Terraform; **Editor** is fine for a course sandbox), and **`OPENAI_API_KEY`**. Use single-line values (no blank line after the value).
+
+3. **Terraform (infra)** — **Actions** → **Terraform GCP infra** → **Run workflow** (branch **`main`**).  
+   On a manual run this workflow will: enable **Cloud Resource Manager**, **Service Usage**, and **Secret Manager**; create the **`openai-api-key`** secret **container** if it is missing; drop any **legacy** `google_secret_manager_secret` entry from Terraform state (it does **not** delete the secret in GCP); import Artifact Registry if it already exists; then **`terraform apply`**.  
+   Wait until the job is **green**.
+
+4. **OpenAI key value in Secret Manager** — The secret **name** exists after step 3; you still need at least **one secret version** (the actual `sk-...` key). Either:
+   - push a commit to **`main`** so **Deploy Digital Twin App** runs (it adds a version from **`OPENAI_API_KEY`** and deploys Cloud Run), or  
+   - run locally: `printf '%s' 'sk-...' | gcloud secrets versions add openai-api-key --data-file=-` (with `gcloud` authenticated to the same project).
+
+5. **Open the app** — In the **Deploy Digital Twin App** workflow log, copy the Cloud Run **URL** and test the chat.
+
+**If Terraform still fails**, open the failed step log. Common fixes: wait a few minutes after enabling APIs; confirm the service account has **Secret Manager Admin** (or **Editor**) if bootstrap cannot create the secret; re-run **Run workflow**.
 
 ### GitHub repository secrets
 
@@ -72,7 +92,7 @@ When pasting **`GCP_PROJECT_ID`** (or the OpenAI key), avoid an extra blank line
 ### Security notes
 
 - **Never commit** API keys or `terraform.tfvars` with secrets; use `backend/.env` locally (gitignored) and GitHub **encrypted** secrets for CI.
-- **GCP:** Terraform declares the `openai-api-key` **secret resource** and grants Cloud Run’s default runtime service account **Secret Accessor**. The key material lives only in Secret Manager versions (written by CI or by you with `gcloud`).
+- **GCP:** The **`openai-api-key`** secret **container** is created by the **infra** workflow (or by you with `gcloud`). Terraform manages **IAM only** (Cloud Run’s default runtime service account can read the secret). Key material lives only in Secret Manager **versions** (written by the **deploy** workflow or `gcloud`).
 - **Vercel:** set `OPENAI_API_KEY` in the Vercel project **Environment Variables** UI (not in the repo). Vercel does not use GCP Secret Manager.
 - The app adds standard **security headers** on HTTP responses and validates chat message length server-side. Errors are logged **without** echoing user text or stack traces that could include HTTP credentials.
 
@@ -193,31 +213,22 @@ If Terraform or `gcloud` reports **Cloud Resource Manager API** is disabled, ope
 
 ### 4. OpenAI key in Secret Manager (recommended)
 
-**If you use Terraform from this repo**, `terraform apply` creates an empty secret named **`openai-api-key`** and grants Cloud Run’s default runtime service account permission to read it. You must still add **at least one secret version** (the actual key):
+After **Terraform GCP infra** has run successfully, the secret **`openai-api-key`** exists as a **container** (and Terraform has applied **Secret Accessor** IAM for Cloud Run’s default compute service account). You still need **at least one secret version** (the real OpenAI key):
 
-- **Option A — GitHub Actions:** add `OPENAI_API_KEY` to GitHub secrets; each successful deploy runs `gcloud secrets versions add` so Cloud Run always mounts `latest`.
+- **Option A — GitHub Actions:** keep **`OPENAI_API_KEY`** in GitHub secrets; each **Deploy Digital Twin App** run runs `gcloud secrets versions add` and deploys Cloud Run with `--set-secrets`.
 - **Option B — manually** (paste key, **Enter**, then **Ctrl+D** on macOS/Linux to end input):
 
 ```bash
 gcloud secrets versions add openai-api-key --data-file=-
 ```
 
-If you **did not** use Terraform and the secret does not exist yet:
+If you are **not** using the infra workflow and the secret does not exist yet:
 
 ```bash
 gcloud secrets create openai-api-key --replication-policy=automatic --data-file=-
 ```
 
-If Terraform later fails with “already exists”, import the existing secret:
-
-```bash
-cd terraform
-terraform import google_secret_manager_secret.openai_api_key projects/YOUR_PROJECT_ID/secrets/openai-api-key
-```
-
-Use your real **project ID** (string, e.g. `my-app-123`) in place of `YOUR_PROJECT_ID`. The **Terraform GCP infra** workflow runs the same import automatically before `apply` (so a secret created earlier with `gcloud` is reconciled into state).
-
-**Manual IAM (only if you skipped Terraform):** grant the default **Compute** service account `roles/secretmanager.secretAccessor` on `openai-api-key` (see earlier README versions or Google’s [Cloud Run secrets](https://cloud.google.com/run/docs/configuring/secrets) guide).
+**Manual IAM (only if you skipped Terraform entirely):** grant the default **Compute** service account `roles/secretmanager.secretAccessor` on `openai-api-key` (see Google’s [Cloud Run secrets](https://cloud.google.com/run/docs/configuring/secrets) guide).
 
 ### 5. Deploy from this repository (simplest path)
 

@@ -28,6 +28,7 @@ jobs:
         run: |
           PID="$(printf '%s' '${{ secrets.GCP_PROJECT_ID }}' | tr -d '\n\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
           echo "TF_VAR_project_id=${PID}" >> "$GITHUB_ENV"
+          echo "GCP_PROJECT_ID=${PID}" >> "$GITHUB_ENV"
 
       - uses: hashicorp/setup-terraform@v3
         with:
@@ -37,6 +38,26 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
+      - uses: google-github-actions/setup-gcloud@v2
+
+      # Enable APIs + ensure secret exists before Terraform (avoids 409 when secret was created outside TF).
+      - name: Bootstrap Secret Manager (APIs + openai-api-key shell)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          set -e
+          PID="${GCP_PROJECT_ID}"
+          gcloud config set project "${PID}" --quiet
+          for api in cloudresourcemanager.googleapis.com serviceusage.googleapis.com secretmanager.googleapis.com; do
+            gcloud services enable "${api}" --quiet
+          done
+          sleep 8
+          if ! gcloud secrets describe openai-api-key --project="${PID}" >/dev/null 2>&1; then
+            gcloud secrets create openai-api-key --project="${PID}" --replication-policy=automatic
+            echo "Created secret openai-api-key (add a version via Deploy workflow or gcloud)."
+          else
+            echo "Secret openai-api-key already exists."
+          fi
+
       - name: Terraform Format
         run: terraform fmt -check -recursive
 
@@ -45,6 +66,12 @@ jobs:
 
       - name: Terraform Validate
         run: terraform validate -no-color
+
+      # Drop old managed secret from state only (does not delete the secret in GCP).
+      - name: Drop legacy google_secret_manager_secret from state (if present)
+        if: github.event_name == 'workflow_dispatch'
+        continue-on-error: true
+        run: terraform state rm google_secret_manager_secret.openai_api_key || true
 
       - name: Reconcile state (import existing Artifact Registry if present)
         if: github.event_name == 'workflow_dispatch'
@@ -56,14 +83,6 @@ jobs:
           terraform import -input=false \
             google_artifact_registry_repository.digital_twin \
             "projects/${GCP_PROJECT_ID}/locations/us-central1/repositories/digital-twin" || true
-
-      - name: Reconcile state (import existing openai-api-key secret if present)
-        if: github.event_name == 'workflow_dispatch'
-        continue-on-error: true
-        run: |
-          terraform import -input=false \
-            google_secret_manager_secret.openai_api_key \
-            "projects/${TF_VAR_project_id}/secrets/openai-api-key" || true
 
       - name: Terraform Plan
         if: github.event_name == 'pull_request'
