@@ -18,6 +18,9 @@ jobs:
     defaults:
       run:
         working-directory: terraform
+    # Required for validate / plan / apply (variable has no default in terraform/)
+    env:
+      TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
 
     steps:
       - uses: actions/checkout@v4
@@ -42,14 +45,10 @@ jobs:
       - name: Terraform Plan
         if: github.event_name == 'pull_request'
         run: terraform plan -no-color -input=false
-        env:
-          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
 
       - name: Terraform Apply
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: terraform apply -auto-approve -input=false
-        env:
-          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
 
   deploy:
     name: Build & deploy Cloud Run
