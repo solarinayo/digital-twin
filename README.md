@@ -174,16 +174,22 @@ gcloud init
 Run (replace `YOUR_PROJECT_ID` if you are not already on the right project):
 
 ```bash
-gcloud services enable run.googleapis.com \
+gcloud services enable cloudresourcemanager.googleapis.com \
+  serviceusage.googleapis.com \
+  run.googleapis.com \
   cloudbuild.googleapis.com \
   artifactregistry.googleapis.com \
   secretmanager.googleapis.com
 ```
 
+- **Cloud Resource Manager** — required for Terraform (and the provider) to read project metadata such as the **project number** used in IAM bindings.
+- **Service Usage** — used to enable and manage other APIs programmatically.
 - **Cloud Run** — hosts the service.
 - **Cloud Build** — builds the container when you use `--source .` or `cloudbuild.yaml`.
 - **Artifact Registry** — stores the built image (used automatically with `--source`).
 - **Secret Manager** — stores the OpenAI key for Cloud Run (Terraform creates the secret + runtime IAM; you add the **value**).
+
+If Terraform or `gcloud` reports **Cloud Resource Manager API** is disabled, open the **activation URL** in the error (Google Cloud Console) once, wait a minute, then re-run.
 
 ### 4. OpenAI key in Secret Manager (recommended)
 

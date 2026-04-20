@@ -6,6 +6,9 @@ provider "google" {
 # APIs required for Cloud Run deploys and Artifact Registry (CI pushes images here).
 locals {
   services = [
+    # Required for data.google_project (project number) and IAM; enable before other reads.
+    "cloudresourcemanager.googleapis.com",
+    "serviceusage.googleapis.com",
     "run.googleapis.com",
     "artifactregistry.googleapis.com",
     "iam.googleapis.com",
@@ -34,6 +37,8 @@ resource "google_artifact_registry_repository" "digital_twin" {
 
 data "google_project" "project" {
   project_id = var.project_id
+
+  depends_on = [google_project_service.apis["cloudresourcemanager.googleapis.com"]]
 }
 
 # OpenAI key: value is never stored in Terraform. Add versions with CI or `gcloud secrets versions add`.
@@ -54,4 +59,9 @@ resource "google_secret_manager_secret_iam_member" "openai_runtime_accessor" {
   secret_id = google_secret_manager_secret.openai_api_key.id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
+
+  depends_on = [
+    google_project_service.apis["cloudresourcemanager.googleapis.com"],
+    google_secret_manager_secret.openai_api_key,
+  ]
 }
