@@ -1,0 +1,15 @@
+# Optional: build and push from Google Cloud Build (image is pushed automatically)
+# gcloud builds submit --config cloudbuild.yaml
+substitutions:
+  _SERVICE_NAME: digital-twin
+
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:latest'
+      - .
+
+images:
+  - 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:latest'
