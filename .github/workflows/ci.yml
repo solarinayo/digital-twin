@@ -42,6 +42,17 @@ jobs:
       - name: Terraform Validate
         run: terraform validate -no-color
 
+      # Ephemeral CI state: re-import resources that already exist in GCP (e.g. Artifact Registry from a prior run).
+      - name: Reconcile state (import existing Artifact Registry if present)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+        run: |
+          terraform import -input=false \
+            google_artifact_registry_repository.digital_twin \
+            "projects/${GCP_PROJECT_ID}/locations/us-central1/repositories/digital-twin" || true
+
       - name: Terraform Plan
         if: github.event_name == 'pull_request'
         run: terraform plan -no-color -input=false
