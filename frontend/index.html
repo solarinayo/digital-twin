@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Solarin Ayomide · Digital Twin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/css/styles.css" />
+  </head>
+  <body>
+    <div
+      class="app"
+      id="app-root"
+      data-profile="__PROFILE_IMG__"
+      data-fallback="__FALLBACK_IMG__"
+    >
+      <header class="header">
+        <div class="header-main">
+          <div class="avatar-wrap">
+            <img
+              class="avatar"
+              src="__PROFILE_IMG__"
+              alt="Solarin Ayomide"
+              onerror="this.onerror=null;this.src='__FALLBACK_IMG__'"
+            />
+            <span class="status-dot" title="Digital twin online"></span>
+          </div>
+          <div class="header-text">
+            <h1>Solarin Ayomide</h1>
+            <p>
+              Digital twin · Web developer &amp; digital strategist. Ask about my work, stack, or
+              collaborations.
+            </p>
+          </div>
+        </div>
+        <div class="gallery" aria-hidden="true">
+          <img src="/images/gallery-1.jpg" alt="" onerror="this.remove()" />
+          <img src="/images/gallery-2.jpg" alt="" onerror="this.remove()" />
+          <img src="/images/gallery-3.jpg" alt="" onerror="this.remove()" />
+        </div>
+      </header>
+
+      <div class="chat-panel">
+        <div class="chat-scroll" id="chat" role="log" aria-live="polite" aria-relevant="additions"></div>
+        <div class="row row-bot typing-row" id="typingRow">
+          <img
+            class="msg-avatar"
+            src="__PROFILE_IMG__"
+            alt=""
+            onerror="this.onerror=null;this.src='__FALLBACK_IMG__'"
+          />
+          <div class="typing" id="typing"><span></span><span></span><span></span></div>
+        </div>
+        <div class="composer">
+          <input type="text" id="message" placeholder="Message…" autocomplete="off" maxlength="2000" />
+          <button type="button" id="sendBtn" onclick="sendMessage()" aria-label="Send message">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M22 2L11 13" />
+              <path d="M22 2l-7 20-4-9-9-4 20-7z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <p class="links">
+        <a href="mailto:solarinayosam@gmail.com">Email</a>
+        ·
+        <a href="https://linkedin.com/in/solarinayo" target="_blank" rel="noopener">LinkedIn</a>
+        ·
+        <a href="https://solarinayo.vercel.app" target="_blank" rel="noopener">Portfolio</a>
+      </p>
+    </div>
+    <script src="/static/js/app.js" defer></script>
+  </body>
+</html>

@@ -1,0 +1,3 @@
+- Agentic systems and automation
+- Tools that help people learn, earn, and scale in tech
+- Blending technical execution with cultural relevance for the Nigerian market

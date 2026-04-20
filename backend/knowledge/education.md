@@ -1,0 +1,2 @@
+- B.Sc. Botany (Second Class Upper), Federal University of Agriculture, Abeokuta (FUNAAB)
+- Certifications: Web3 (Moralis), Cybersecurity (IBM Digital, CISCO), Web Development (Dominion Academy, Code Lagos)

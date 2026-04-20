@@ -4,16 +4,43 @@ AI-powered digital twin representing my skills as a web developer and digital st
 
 ## Tech Stack
 
-- **Production web UI:** FastAPI (`api/index.py`) — chat interface
-- **Local Gradio UI:** `app.py` (run with `python app.py` after installing Gradio)
+- **Production web UI:** Vanilla HTML/CSS/JS in `frontend/`; FastAPI in `backend/app/main.py` serves `index.html` and mounts `frontend/static/` at `/static/`. Entry for hosting: `backend/app/main.py` (Vercel / Cloud Run).
 - OpenAI GPT-3.5 Turbo
 - Python
+
+## Repository layout
+
+| Path | Role |
+|------|------|
+| `backend/app/` | FastAPI `app`, routes, OpenAI chat, HTML template fill-in (Vercel + `uvicorn` entry). |
+| `backend/knowledge/` | Markdown files merged into the system prompt. |
+| `frontend/` | `index.html` plus `static/css/styles.css` and `static/js/app.js`. |
+| `public/images/` | Gallery thumbnails and `/images/avatar.svg` fallback. |
+| `terraform/` | GCP APIs + Artifact Registry (see workflows). |
 
 ## Features
 
 - Answers questions about my work experience
 - Explains my technical skills
 - Discusses collaboration opportunities
+
+## Knowledge base (markdown)
+
+Editable facts for the twin live under `backend/knowledge/` (`*.md`). At startup, `backend/app/main.py` loads every markdown file and appends it to the system prompt. Edit those files and push to `main` to refresh what the model knows; `deploy-app.yml` rebuilds when `backend/**` or `frontend/**` changes.
+
+## Local FastAPI (same app as Cloud Run / Vercel)
+
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+# Either export the key, or create backend/.env (loaded automatically):
+#   echo 'OPENAI_API_KEY=sk-...' > backend/.env
+export OPENAI_API_KEY=sk-...
+uvicorn backend.app.main:app --reload --port 8000
+# open http://127.0.0.1:8000
+```
+
+If every reply says the model is not configured, the key is still missing—check the server log for a warning about `OPENAI_API_KEY`.
 
 ## Live demo
 
@@ -27,7 +54,8 @@ This repo satisfies **CI-based deployment (GitHub Actions)** and **infrastructur
 | Piece | Purpose |
 |--------|---------|
 | `terraform/` | Declares **enabled APIs** and a **Docker Artifact Registry** repository used by CI. |
-| `.github/workflows/ci.yml` | On **pull requests:** `terraform fmt`, `validate`, `plan`. On **`main`:** `terraform apply`, then **Docker build → push → `gcloud run deploy`**. |
+| `.github/workflows/deploy-app.yml` | On **push to `main`** (app paths): **Docker build → Artifact Registry → Cloud Run**. |
+| `.github/workflows/infra-apply.yml` | **Pull requests** touching `terraform/`: `fmt`, `validate`, `plan`. **`workflow_dispatch`:** `terraform apply` (run this once—or when infra changes—before the first deploy). |
 
 ### GitHub repository secrets
 
@@ -60,7 +88,7 @@ Do not commit `terraform.tfvars` (it is gitignored).
 
 ## Google Cloud Run — step-by-step
 
-These steps deploy the **FastAPI** app in `api/` (same chat UI as production). The container is defined in the repo root `Dockerfile`.
+These steps deploy the **FastAPI** app in `backend/` (same chat UI as production). The container is defined in the repo root `Dockerfile`.
 
 ### 1. Create a Google Cloud project
 
@@ -234,7 +262,6 @@ In Cloud Console: **Cloud Run** → your service → **Manage custom domains** a
 
 - The app listens on the **`PORT`** environment variable; Cloud Run sets this automatically. The `Dockerfile` already uses it.
 - **Billing:** Cloud Run has a generous free tier; enable billing on the project if Google asks (required for some features).
-- **Gradio** (`app.py`) is for local use; Cloud Run runs **FastAPI** only unless you change the `Dockerfile` `CMD`.
 
 ---
 

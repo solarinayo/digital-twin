@@ -1,0 +1,3 @@
+- Web development (full-stack oriented delivery)
+- Product-minded engineering and pragmatic architecture
+- Growth and go-to-market aware builds

@@ -1,0 +1,61 @@
+# Tolu-style: Docker → Artifact Registry → Cloud Run on push to main.
+name: Deploy Digital Twin App
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "frontend/**"
+      - "public/**"
+      - "Dockerfile"
+      - "requirements.txt"
+      - ".github/workflows/deploy-app.yml"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    name: Build & deploy Cloud Run
+    runs-on: ubuntu-latest
+
+    env:
+      REGION: us-central1
+      SERVICE: digital-twin
+      REPO: digital-twin
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Build and push image
+        env:
+          PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+        run: |
+          IMAGE="${{ env.REGION }}-docker.pkg.dev/${PROJECT_ID}/${{ env.REPO }}/${{ env.SERVICE }}:${GITHUB_SHA}"
+          docker build -t "${IMAGE}" .
+          docker push "${IMAGE}"
+          echo "IMAGE=${IMAGE}" >> "$GITHUB_ENV"
+
+      - name: Deploy to Cloud Run
+        env:
+          PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+        run: |
+          gcloud run deploy ${{ env.SERVICE }} \
+            --project "${PROJECT_ID}" \
+            --region "${{ env.REGION }}" \
+            --image "${IMAGE}" \
+            --platform managed \
+            --allow-unauthenticated \
+            --set-env-vars "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" \
+            --quiet
