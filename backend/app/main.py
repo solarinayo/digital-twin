@@ -7,12 +7,30 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from openai import OpenAI
-from pydantic import BaseModel
+from openai import APIError, AuthenticationError, OpenAI, RateLimitError
+from pydantic import BaseModel, Field
+from starlette.middleware.base import BaseHTTPMiddleware
 
 logger = logging.getLogger(__name__)
 
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Baseline browser security headers (no secrets in responses)."""
+
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        response.headers.setdefault(
+            "Permissions-Policy",
+            "geolocation=(), microphone=(), camera=(), payment=()",
+        )
+        return response
+
+
 app = FastAPI()
+app.add_middleware(SecurityHeadersMiddleware)
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 _BACKEND_DIR = Path(__file__).resolve().parent.parent
@@ -85,7 +103,7 @@ def _load_index_html(profile: str, fallback: str) -> str:
 
 
 class ChatRequest(BaseModel):
-    message: str
+    message: str = Field(..., min_length=1, max_length=2000)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -95,7 +113,9 @@ async def root():
 
 @app.post("/api/chat")
 async def chat(request: ChatRequest):
-    message = request.message
+    message = request.message.strip()
+    if not message:
+        return {"response": "Send a non-empty message and I’ll reply."}
 
     # Contact info check
     if any(word in message.lower() for word in ["reach", "contact", "email", "phone"]):
@@ -113,7 +133,20 @@ async def chat(request: ChatRequest):
                 max_tokens=300,
             )
             return {"response": response.choices[0].message.content}
+        except AuthenticationError:
+            logger.error("OpenAI authentication failed (check API key)")
+            return {
+                "response": "The AI service rejected the API key. If you’re the operator, check the key in Secret Manager / env and try again."
+            }
+        except RateLimitError:
+            logger.warning("OpenAI rate limit hit")
+            return {"response": "Too many requests right now — please wait a moment and try again."}
+        except APIError as err:
+            logger.warning("OpenAI API error: %s", getattr(err, "type", type(err).__name__))
+            return {"response": "I couldn’t reach the AI service just now. Try again in a bit."}
         except Exception:
+            # Avoid exc_info: tracebacks from HTTP clients can include Authorization headers.
+            logger.error("Unexpected error during chat completion")
             return {"response": "I'm Solarin Ayomide – web developer and digital strategist. What would you like to know about my work?"}
 
     return {

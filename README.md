@@ -65,15 +65,20 @@ Add these in **GitHub → Settings → Secrets and variables → Actions**:
 |--------|-------------|
 | `GCP_SA_KEY` | JSON key for a **service account** in your GCP project (see roles below). |
 | `GCP_PROJECT_ID` | Plain project ID string (e.g. `jekacode-488803`). |
-| `OPENAI_API_KEY` | Your OpenAI API key (passed into Cloud Run as an env var by CI). |
+| `OPENAI_API_KEY` | OpenAI API key used **only in CI** to push a new [Secret Manager](https://cloud.google.com/secret-manager) **version** of `openai-api-key`. Cloud Run **does not** store this value as a plaintext env var; the service mounts the secret at runtime. |
 
 When pasting **`GCP_PROJECT_ID`** (or the OpenAI key), avoid an extra blank line after the value—GitHub stores it verbatim, and a trailing newline used to break Docker image tags. Workflows now strip newlines, but keeping secrets single-line is still best practice.
 
-For production, prefer **Secret Manager** + `--set-secrets` instead of storing the OpenAI key only in GitHub; the workflow uses GitHub Secrets for simplicity.
+### Security notes
+
+- **Never commit** API keys or `terraform.tfvars` with secrets; use `backend/.env` locally (gitignored) and GitHub **encrypted** secrets for CI.
+- **GCP:** Terraform declares the `openai-api-key` **secret resource** and grants Cloud Run’s default runtime service account **Secret Accessor**. The key material lives only in Secret Manager versions (written by CI or by you with `gcloud`).
+- **Vercel:** set `OPENAI_API_KEY` in the Vercel project **Environment Variables** UI (not in the repo). Vercel does not use GCP Secret Manager.
+- The app adds standard **security headers** on HTTP responses and validates chat message length server-side. Errors are logged **without** echoing user text or stack traces that could include HTTP credentials.
 
 ### Service account roles (bootstrap)
 
-The JSON service account used in `GCP_SA_KEY` needs permission to run Terraform and deploy. For a bootcamp sandbox, **Project → IAM → Grant access** with **Editor** is common; tighter options include combinations of **Service Usage Admin**, **Artifact Registry Administrator**, **Cloud Run Admin**, and **Service Account User** on the default compute service account.
+The JSON service account used in `GCP_SA_KEY` needs permission to run Terraform and deploy. For a bootcamp sandbox, **Project → IAM → Grant access** with **Editor** is common; tighter options include combinations of **Service Usage Admin**, **Artifact Registry Administrator**, **Cloud Run Admin**, **Secret Manager** access to add secret versions (`roles/secretmanager.secretVersionAdder` on `openai-api-key` or broader **Secret Manager Admin**), and **Service Account User** on the default compute service account.
 
 ### Local Terraform (optional)
 
@@ -178,41 +183,33 @@ gcloud services enable run.googleapis.com \
 - **Cloud Run** — hosts the service.
 - **Cloud Build** — builds the container when you use `--source .` or `cloudbuild.yaml`.
 - **Artifact Registry** — stores the built image (used automatically with `--source`).
-- **Secret Manager** — optional but recommended for `OPENAI_API_KEY`.
+- **Secret Manager** — stores the OpenAI key for Cloud Run (Terraform creates the secret + runtime IAM; you add the **value**).
 
-### 4. Put your OpenAI key in Secret Manager (recommended)
+### 4. OpenAI key in Secret Manager (recommended)
 
-1. Create a secret with your OpenAI API key (paste the key, press **Enter**, then **Ctrl+D** on macOS/Linux to finish; do not commit keys to git):
+**If you use Terraform from this repo**, `terraform apply` creates an empty secret named **`openai-api-key`** and grants Cloud Run’s default runtime service account permission to read it. You must still add **at least one secret version** (the actual key):
 
-```bash
-gcloud secrets create openai-api-key \
-  --replication-policy=automatic \
-  --data-file=-
-```
-
-If the secret already exists, add a new version instead: `gcloud secrets versions add openai-api-key --data-file=-`.
-
-2. Allow **Cloud Run’s runtime service account** to read that secret. First get your **project number**:
+- **Option A — GitHub Actions:** add `OPENAI_API_KEY` to GitHub secrets; each successful deploy runs `gcloud secrets versions add` so Cloud Run always mounts `latest`.
+- **Option B — manually** (paste key, **Enter**, then **Ctrl+D** on macOS/Linux to end input):
 
 ```bash
-gcloud projects describe $(gcloud config get-value project) --format='value(projectNumber)'
+gcloud secrets versions add openai-api-key --data-file=-
 ```
 
-Then (replace `PROJECT_NUMBER` with that number):
+If you **did not** use Terraform and the secret does not exist yet:
 
 ```bash
-gcloud secrets add-iam-policy-binding openai-api-key \
-  --member="serviceAccount:PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
-  --role="roles/secretmanager.secretAccessor"
+gcloud secrets create openai-api-key --replication-policy=automatic --data-file=-
 ```
 
-If deploy later says it cannot access the secret, this binding is usually what is missing.
-
-**Quick test only:** you can skip secrets and pass the key as an env var (not ideal for production):
+If Terraform later fails with “already exists”, import the existing secret:
 
 ```bash
---set-env-vars OPENAI_API_KEY=sk-...
+cd terraform
+terraform import google_secret_manager_secret.openai_api_key projects/YOUR_PROJECT_ID/secrets/openai-api-key
 ```
+
+**Manual IAM (only if you skipped Terraform):** grant the default **Compute** service account `roles/secretmanager.secretAccessor` on `openai-api-key` (see earlier README versions or Google’s [Cloud Run secrets](https://cloud.google.com/run/docs/configuring/secrets) guide).
 
 ### 5. Deploy from this repository (simplest path)
 
@@ -225,7 +222,7 @@ gcloud run deploy digital-twin \
   --source . \
   --region us-central1 \
   --allow-unauthenticated \
-  --set-secrets OPENAI_API_KEY=openai-api-key:latest
+  --set-secrets "OPENAI_API_KEY=openai-api-key:latest"
 ```
 
 - **`digital-twin`** — Cloud Run service name (change if you like).
@@ -253,7 +250,7 @@ gcloud run deploy digital-twin \
   --image gcr.io/YOUR_PROJECT_ID/digital-twin:latest \
   --region us-central1 \
   --allow-unauthenticated \
-  --set-secrets OPENAI_API_KEY=openai-api-key:latest
+  --set-secrets "OPENAI_API_KEY=openai-api-key:latest"
 ```
 
 ### 8. Custom domain (optional)

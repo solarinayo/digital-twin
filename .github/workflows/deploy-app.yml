@@ -49,18 +49,32 @@ jobs:
           docker push "${IMAGE}"
           echo "IMAGE=${IMAGE}" >> "$GITHUB_ENV"
 
-      - name: Deploy to Cloud Run
+      # Never pass the API key into Cloud Run as a plaintext env var; sync to Secret Manager then mount.
+      - name: Add OpenAI key version to Secret Manager
         env:
           PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           PROJECT_ID="$(printf '%s' "$PROJECT_ID" | tr -d '\n\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
           OPENAI_API_KEY="$(printf '%s' "$OPENAI_API_KEY" | tr -d '\n\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "::warning::GitHub secret OPENAI_API_KEY is empty — skipping Secret Manager version add. Ensure secret openai-api-key has at least one version in GCP."
+          else
+            printf '%s' "$OPENAI_API_KEY" | gcloud secrets versions add openai-api-key \
+              --project "${PROJECT_ID}" --data-file=-
+          fi
+
+      - name: Deploy to Cloud Run
+        env:
+          PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+        run: |
+          PROJECT_ID="$(printf '%s' "$PROJECT_ID" | tr -d '\n\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
           gcloud run deploy ${{ env.SERVICE }} \
             --project "${PROJECT_ID}" \
             --region "${{ env.REGION }}" \
             --image "${IMAGE}" \
             --platform managed \
             --allow-unauthenticated \
-            --set-env-vars "OPENAI_API_KEY=${OPENAI_API_KEY}" \
+            --set-secrets "OPENAI_API_KEY=openai-api-key:latest" \
+            --remove-env-vars "OPENAI_API_KEY" \
             --quiet
