@@ -215,6 +215,8 @@ cd terraform
 terraform import google_secret_manager_secret.openai_api_key projects/YOUR_PROJECT_ID/secrets/openai-api-key
 ```
 
+Use your real **project ID** (string, e.g. `my-app-123`) in place of `YOUR_PROJECT_ID`. The **Terraform GCP infra** workflow runs the same import automatically before `apply` (so a secret created earlier with `gcloud` is reconciled into state).
+
 **Manual IAM (only if you skipped Terraform):** grant the default **Compute** service account `roles/secretmanager.secretAccessor` on `openai-api-key` (see earlier README versions or Google’s [Cloud Run secrets](https://cloud.google.com/run/docs/configuring/secrets) guide).
 
 ### 5. Deploy from this repository (simplest path)

@@ -57,6 +57,14 @@ jobs:
             google_artifact_registry_repository.digital_twin \
             "projects/${GCP_PROJECT_ID}/locations/us-central1/repositories/digital-twin" || true
 
+      - name: Reconcile state (import existing openai-api-key secret if present)
+        if: github.event_name == 'workflow_dispatch'
+        continue-on-error: true
+        run: |
+          terraform import -input=false \
+            google_secret_manager_secret.openai_api_key \
+            "projects/${TF_VAR_project_id}/secrets/openai-api-key" || true
+
       - name: Terraform Plan
         if: github.event_name == 'pull_request'
         run: terraform plan -no-color -input=false
